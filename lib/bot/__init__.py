@@ -4,6 +4,8 @@ from discord import Embed, File
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from discord.ext.commands import CommandNotFound
 
+from apscheduler.triggers.cron import CronTrigger
+
 from ..db import db
 
 PREFIX = "."
@@ -19,7 +21,7 @@ class Bot(BotBase):
         self.guild = None
         self.scheduler = AsyncIOScheduler()
 
-        db.autosave(sched=self.scheduler)
+        db.autosave(self.scheduler)
 
         super().__init__(command_prefix=PREFIX, owner_ids=OWNER_IDS)
 
@@ -30,6 +32,13 @@ class Bot(BotBase):
 
         print("running bot...")
         super().run(self.TOKEN, reconnect=True)
+
+
+
+    async def rules_reminder(self):
+        channel = self.get_channel(CHANNEL)
+        await channel.send("Buraya kuralları koymayı unutma!")
+
 
     async def on_connect(self):
         print("bot connected")
@@ -60,7 +69,11 @@ class Bot(BotBase):
         if not self.ready:
             self.ready = True
             self.guild = self.get_guild(GUILD)
+
+            # self.scheduler.add_job(self.rules_reminder, CronTrigger(day_of_week= 0,minute=0, hour=12,second=0))
+
             self.scheduler.start()
+
 
             channel = self.get_channel(CHANNEL)
             await channel.send("Ben geldim.")
