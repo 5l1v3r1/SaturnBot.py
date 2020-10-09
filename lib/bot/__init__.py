@@ -1,5 +1,7 @@
 from discord.ext.commands import Bot as BotBase
 from datetime import datetime
+from glob import glob
+
 from discord import Embed, File
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from discord.ext.commands import CommandNotFound
@@ -13,6 +15,8 @@ OWNER_IDS = [259755764573274112]
 GUILD = 742121436747006072
 CHANNEL = 763704766399774720
 
+COGS = [path.split("\\")[-1][:-3] for path in glob("./lib/cogs/*.py")]
+
 
 class Bot(BotBase):
     def __init__(self):
@@ -25,10 +29,20 @@ class Bot(BotBase):
 
         super().__init__(command_prefix=PREFIX, owner_ids=OWNER_IDS)
 
+    def setup(self):
+        for cog in COGS:
+            self.load_extension(f"lib.cogs.{cog}")
+            print(f"{cog} is loaded")
+        print("setup complete")
+
     def run(self, version):
         self.VERSION = version
         with open("./lib/bot/token", "r", encoding="utf-8") as tf:
             self.TOKEN = tf.read()
+
+        print("setup running...")
+        self.setup()
+
 
         print("running bot...")
         super().run(self.TOKEN, reconnect=True)
@@ -36,8 +50,7 @@ class Bot(BotBase):
 
 
     async def rules_reminder(self):
-        channel = self.get_channel(CHANNEL)
-        await channel.send("Buraya kuralları koymayı unutma!")
+        await self.stdout.send("Buraya kuralları koymayı unutma!")
 
 
     async def on_connect(self):
@@ -73,10 +86,10 @@ class Bot(BotBase):
             # self.scheduler.add_job(self.rules_reminder, CronTrigger(day_of_week= 0,minute=0, hour=12,second=0))
 
             self.scheduler.start()
-
+            self.stdout = self.get_channel(CHANNEL)
 
             channel = self.get_channel(CHANNEL)
-            await channel.send("Ben geldim.")
+            await self.stdout.send("Ben geldim.")
 
             # embed = Embed(title="Botunuz Online!", description="Rings of Saturn şu anda online",
             #               colour=0xFF0000, timestamp=datetime.utcnow())
@@ -101,6 +114,7 @@ class Bot(BotBase):
 
     async def on_message(self, message):
         pass
+    8
 
 
 bot = Bot()
