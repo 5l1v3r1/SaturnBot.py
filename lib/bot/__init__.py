@@ -1,6 +1,7 @@
 from discord.ext.commands import Bot as BotBase
 from datetime import datetime
 from glob import glob
+from asyncio import sleep
 
 from discord import Embed, File
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -18,13 +19,26 @@ CHANNEL = 763704766399774720
 COGS = [path.split("\\")[-1][:-3] for path in glob("./lib/cogs/*.py")]
 
 
+class Ready(object):
+    def __init__(self):
+        for cog in COGS:
+            setattr(self, cog, False)
+
+    def ready_up(self, cog):
+        setattr(self, cog, True)
+        print(f"{cog} cog ready")
+
+    def all_ready(self):
+        return all([getattr(self, cog) for cog in COGS])
+
+
 class Bot(BotBase):
     def __init__(self):
         self.PREFIX = PREFIX
         self.ready = False
         self.guild = None
         self.scheduler = AsyncIOScheduler()
-
+        self.cogs_ready = Ready()
         db.autosave(self.scheduler)
 
         super().__init__(command_prefix=PREFIX, owner_ids=OWNER_IDS)
@@ -43,15 +57,11 @@ class Bot(BotBase):
         print("setup running...")
         self.setup()
 
-
         print("running bot...")
         super().run(self.TOKEN, reconnect=True)
 
-
-
     async def rules_reminder(self):
         await self.stdout.send("Buraya kuralları koymayı unutma!")
-
 
     async def on_connect(self):
         print("bot connected")
@@ -108,12 +118,16 @@ class Bot(BotBase):
             # await channel.send(file= File("./db/images/profile.png"))
             # await channel.send(embed=embed)
 
+            while not self.cogs_ready.all_ready():
+                await sleep(0.5)
+
             print("bot is ready")
         else:
             print("bot reconnected")
 
     async def on_message(self, message):
         pass
+
     8
 
 
